@@ -17,8 +17,6 @@ class OssPersistenceProvider(AbstractPersistenceProvider):
         self.prefix = prefix
 
     def get_object_name(self, name: str) -> str:
-        if self.prefix[-1] != '/':
-            self.prefix += '/'
         name = self.prefix + name
         if name[-4:] != '.bin':
             name += '.bin'
@@ -43,8 +41,8 @@ class OssPersistenceProvider(AbstractPersistenceProvider):
     @classmethod
     def construct(cls, config: ConfigRegistry) -> AbstractPersistenceProvider:
         auth = oss2.Auth(
-            config['ALIBABA_CLOUD_ACCESS_ID'],
-            config['ALIBABA_CLOUD_ACCESS_SECRET']
+            config['ALIBABA_CLOUD_ACCESS_KEY_ID'],
+            config['ALIBABA_CLOUD_ACCESS_KEY_SECRET']
         )
 
         endpoint = 'https://oss-cn-beijing-internal.aliyuncs.com' \
