@@ -14,9 +14,17 @@ if TYPE_CHECKING:
 
 class JwglxtAuthentication:
 
-    def __init__(self, tunnel: AbstractTunnel, username: str, password: str):
+    def __init__(
+        self,
+        tunnel: AbstractTunnel,
+        base_url: str,
+        username: str,
+        password: str,
+    ):
         self.key: Optional[Tuple[str, str]] = None
+
         self.tunnel = tunnel
+        self.base_url = base_url
 
         self.username = username
         self.password = password
@@ -26,7 +34,7 @@ class JwglxtAuthentication:
 
     def check(self) -> bool:
         session = self.tunnel.get_session()
-        url = self.tunnel.transform_url('https://jwglxt.bjut.edu.cn/xtgl/index_initMenu.html')
+        url = self.tunnel.transform_url(f'{self.base_url}/xtgl/index_initMenu.html')
 
         response = session.get(url, params={
             '_t': floor(time.time() * 1000)
@@ -41,7 +49,7 @@ class JwglxtAuthentication:
         password_encrypted = b64encode(password_encrypted).decode()
 
         session = self.tunnel.get_session()
-        url = self.tunnel.transform_url('https://jwglxt.bjut.edu.cn/xtgl/login_slogin.html')
+        url = self.tunnel.transform_url(f'{self.base_url}/xtgl/login_slogin.html')
         session.post(url, params={
             'time': floor(time.time() * 1000)
         }, data={
@@ -58,7 +66,7 @@ class JwglxtAuthentication:
             return
 
         session = self.tunnel.get_session()
-        url = self.tunnel.transform_url('https://jwglxt.bjut.edu.cn/xtgl/login_getPublicKey.html')
+        url = self.tunnel.transform_url(f'{self.base_url}/xtgl/login_getPublicKey.html')
 
         response = session.get(url)
         response.raise_for_status()
@@ -71,7 +79,7 @@ class JwglxtAuthentication:
 
     def _get_csrf_token(self):
         session = self.tunnel.get_session()
-        url = self.tunnel.transform_url('https://jwglxt.bjut.edu.cn/xtgl/login_slogin.html')
+        url = self.tunnel.transform_url(f'{self.base_url}/xtgl/login_slogin.html')
 
         response = session.get(url)
         response.raise_for_status()
