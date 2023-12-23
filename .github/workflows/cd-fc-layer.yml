@@ -1,0 +1,54 @@
+name: Deploy Alibaba Cloud FC Layer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cd-fc-layer.yml
+      - bjut_tech/**
+      - pyproject.toml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Sync the version here with the latest supported runtime version
+          python-version: '3.10'
+          cache: 'pip'
+
+      - uses: jerray/setup-aliyun-cli-action@v1.0.2
+        with:
+          aliyun-cli-version: '3.0.189'
+          mode: AK
+          access-key-id: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          access-key-secret: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+          region: cn-beijing
+
+      - uses: manyuanrong/setup-ossutil@v3.0
+        with:
+          endpoint: "oss-cn-beijing.aliyuncs.com"
+          access-key-id: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          access-key-secret: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+
+      - name: Build package and deploy layer
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --target ./build/layer/python .
+          cd ./build/layer/
+          zip -qr ../layer.zip ./python
+          cd ../../
+          ossutil cp -f ./build/layer.zip oss://bjut-tech/build/fc/layer_commons.zip
+          aliyun fc-open POST /2021-04-06/layers/bjut-tech_commons/versions \
+            --header "Content-Type=application/json;" \
+            --body "{\"compatibleRuntime\":[\"python3.10\",\"python3.9\"],\"Code\":{\"ossBucketName\":\"bjut-tech\",\"ossObjectName\":\"build/fc/layer_commons.zip\"}}"
+          ossutil rm -f oss://bjut-tech/build/fc/layer_commons.zip
+          rm -f ./build/layer.zip
