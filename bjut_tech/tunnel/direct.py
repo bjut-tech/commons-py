@@ -29,7 +29,8 @@ class NoTunnel(AbstractTunnel):
     @classmethod
     def is_available(cls) -> bool:
         try:
-            sock = socket.create_connection(('jwglxt.bjut.edu.cn', 80), timeout=0.1)
+            # try to connect a known server
+            sock = socket.create_connection(('172.20.4.15', 80), timeout=0.1)
             sock.close()
 
         except OSError or TimeoutError:
