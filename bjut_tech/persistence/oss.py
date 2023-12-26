@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import oss2
+try:
+    import oss2
+except ImportError:
+    oss2 = None
 
 from ._base import AbstractPersistenceProvider
 
@@ -40,6 +43,9 @@ class OssPersistenceProvider(AbstractPersistenceProvider):
 
     @classmethod
     def construct(cls, config: ConfigRegistry) -> AbstractPersistenceProvider:
+        if oss2 is None:
+            raise ImportError('Unable to use `oss` persistence since `oss2` is not installed. Please install it first.')
+
         auth = oss2.Auth(
             config['ALIBABA_CLOUD_ACCESS_KEY_ID'],
             config['ALIBABA_CLOUD_ACCESS_KEY_SECRET']
