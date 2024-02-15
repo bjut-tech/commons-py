@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import socket
+import time
+from functools import lru_cache
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -11,6 +14,19 @@ if TYPE_CHECKING:
     from httpx import Client
     from ..persistence import AbstractPersistenceProvider
     from .._config import ConfigRegistry
+
+
+@lru_cache(maxsize=1)
+def availability_check(time_hash) -> bool:
+    del time_hash  # invalidate cache when time_hash changes
+
+    try:
+        sock = socket.create_connection(('libziyuan.bjut.edu.cn', 8118), timeout=1)
+        sock.close()
+    except OSError or TimeoutError:
+        return False
+
+    return True
 
 
 class LibraryTunnel(AbstractTunnel):
@@ -34,8 +50,7 @@ class LibraryTunnel(AbstractTunnel):
         if hostname.endswith('libziyuan.bjut.edu.cn'):
             # already webvpn url
             return url
-        else:
-            hostname = hostname.replace('-', '--').replace('.', '-')
+        hostname = hostname.replace('-', '--').replace('.', '-')
 
         if port is None:
             if is_https:
@@ -48,6 +63,22 @@ class LibraryTunnel(AbstractTunnel):
         netloc = f'{hostname}.libziyuan.bjut.edu.cn:8118'
         return parsed_url._replace(scheme='http', netloc=netloc).geturl()
 
+    def transform_cookie(self, **kwargs) -> dict:
+        if 'secure' in kwargs:
+            kwargs['secure'] = False
+
+        if 'domain' in kwargs:
+            if kwargs['domain'][0] == '.':
+                kwargs['name'] += '_-_' + kwargs['domain'][1:]
+                kwargs['domain'] = '.libziyuan.bjut.edu.cn'
+            else:
+                domain = kwargs['domain'].replace('-', '--').replace('.', '-')
+                domain += '-s'  # TODO: find a better way to handle https domains
+                domain += '.libziyuan.bjut.edu.cn'
+                kwargs['domain'] = domain
+
+        return kwargs
+
     @classmethod
     def get_name(cls) -> str:
         return 'Library WebVPN'
@@ -58,7 +89,7 @@ class LibraryTunnel(AbstractTunnel):
 
     @classmethod
     def is_available(cls) -> bool:
-        return True
+        return availability_check(time.time() // 600)
 
     @classmethod
     def construct(cls, session: Client, config: ConfigRegistry) -> AbstractTunnel:
