@@ -38,8 +38,22 @@ class TunnelSelector:
         raise RuntimeError('No tunnel available')
 
     @staticmethod
+    def find(name: str) -> Type[AbstractTunnel]:
+        for tunnel_cls in _TUNNELS:
+            if tunnel_cls.get_name() == name:
+                return tunnel_cls
+        raise ValueError('No such tunnel')
+
+    @staticmethod
     def check_availability(cls_name: str) -> bool:
         for tunnel_cls in _TUNNELS:
             if tunnel_cls.__name__ == cls_name:
                 return tunnel_cls.is_available()
+        return False
+
+    @staticmethod
+    def has_available() -> bool:
+        for tunnel_cls in _TUNNELS:
+            if tunnel_cls.is_available():
+                return True
         return False
