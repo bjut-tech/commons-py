@@ -50,7 +50,10 @@ class ConfigRegistry:
             raise ValueError(f'Unknown config key: {key}')
 
     def set_overrides(self, overrides: Dict[str, Any]):
-        self._overrides = overrides
+        self._overrides = overrides.copy()
+        for key, value in overrides.items():
+            if value == '':
+                del self._overrides[key]
 
     def clear_overrides(self):
         self._overrides = {}
