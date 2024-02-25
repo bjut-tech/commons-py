@@ -43,6 +43,10 @@ class JwglxtAuthentication:
         return response.status_code == 200
 
     def authenticate(self):
+        if self.check():
+            # also for setting initial session cookie
+            return
+
         self._get_key()
         pub_key = rsa.PublicKey(int(self.key[0], 16), int(self.key[1], 16))
         password_encrypted = rsa.encrypt(self.password.encode('utf-8'), pub_key)

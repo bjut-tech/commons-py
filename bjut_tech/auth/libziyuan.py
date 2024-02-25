@@ -39,15 +39,15 @@ class LibziyuanAuthentication:
         if session is None:
             session = self._new_session()
 
+        if self.check(session):
+            return session
+
         saved_cookies = self.persistence.load(self.persistence_key)
         if saved_cookies is not None:
             session.cookies.update(saved_cookies)
-
-        if self.check(session):
-            print('[libziyuan] authenticated session reused')
-            return session
-
-        if saved_cookies is not None:
+            if self.check(session):
+                print('[libziyuan] authenticated session reused')
+                return session
             self.persistence.delete(self.persistence_key)
 
         response = session.get('https://libziyuan.bjut.edu.cn/por/login_auth.csp', params={
