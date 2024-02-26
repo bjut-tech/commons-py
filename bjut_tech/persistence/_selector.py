@@ -5,6 +5,7 @@ import warnings
 from typing import TYPE_CHECKING
 
 from ._base import AbstractPersistenceProvider
+from .noop import NoopPersistenceProvider
 from .temp import TemporaryFilePersistenceProvider
 
 try:
@@ -25,5 +26,7 @@ def get_persistence(config: ConfigRegistry) -> AbstractPersistenceProvider:
         return OssPersistenceProvider.construct(config)
     elif cls_name == 'temp':
         return TemporaryFilePersistenceProvider.construct(config)
+    elif cls_name == 'noop':
+        return NoopPersistenceProvider.construct(config)
     else:
         raise ValueError(f'Unknown persistence type: {cls_name}')
