@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bjut-tech"
-version = "0.2.2"
+version = "0.2.3"
 description = "The bjut.tech Python package for some common stuff."
 readme = "README.md"
 dependencies = [

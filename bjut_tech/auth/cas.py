@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from ..utils import random_ipv6
 
 if TYPE_CHECKING:
+    from httpx import Response
     from ..tunnel import AbstractTunnel
 
 
@@ -52,7 +53,7 @@ class CasAuthentication:
             response.raise_for_status()
             raise RuntimeError('unknown error')
 
-    def authenticate(self, service_url: str):
+    def authenticate(self, service_url: str) -> Response:
         session = self.tunnel.get_session()
         url = self.tunnel.transform_url(f'{self.base_url}/v1/tickets')
 
@@ -75,7 +76,7 @@ class CasAuthentication:
         )
 
         url = self.tunnel.transform_url(f'{self.base_url}/login')
-        session.get(url, params={
+        return session.get(url, params={
             'service': service_url
         }, headers={
             'User-Agent': 'Mozilla/5.0',
