@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import socket
-import time
 from functools import lru_cache
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -23,10 +22,9 @@ def availability_check(time_hash) -> bool:
     try:
         sock = socket.create_connection(('libziyuan.bjut.edu.cn', 8118), timeout=1)
         sock.close()
+        return True
     except OSError or TimeoutError:
         return False
-
-    return True
 
 
 class LibraryTunnel(AbstractTunnel):
@@ -35,7 +33,7 @@ class LibraryTunnel(AbstractTunnel):
         super().__init__(session)
 
         self.auth = LibziyuanAuthentication(persistence, username, password)
-        self.auth.authenticate(self._session)
+        self.authenticate()
 
     def authenticate(self):
         self.auth.authenticate(self._session)
@@ -63,6 +61,40 @@ class LibraryTunnel(AbstractTunnel):
         netloc = f'{hostname}.libziyuan.bjut.edu.cn:8118'
         return parsed_url._replace(scheme='http', netloc=netloc).geturl()
 
+    def recover_url(self, url: str) -> str:
+        parsed_url = urlparse(url)
+
+        if not parsed_url.netloc.endswith('libziyuan.bjut.edu.cn:8118'):
+            # not a webvpn url
+            return url
+
+        subdomain = parsed_url.netloc.replace('.libziyuan.bjut.edu.cn:8118', '')
+
+        parts = subdomain.split('-')
+        is_https = False
+        port = None
+        if parts and parts[-1] == 's':
+            is_https = True
+            parts.pop()
+        if parts and parts[-1] == 'p':
+            parts.pop()
+            if parts and parts[-1].isdigit():
+                port = int(parts[-1])
+                parts.pop()
+
+        hostname = '-'.join(parts)
+        hostname = hostname.replace('--', '\x00')
+        hostname = hostname.replace('-', '.')
+        hostname = hostname.replace('\x00', '-')
+
+        scheme = 'https' if is_https else 'http'
+        if port is not None:
+            netloc = f"{hostname}:{port}"
+        else:
+            netloc = hostname
+
+        return parsed_url._replace(scheme=scheme, netloc=netloc).geturl()
+
     def transform_cookie(self, **kwargs) -> dict:
         if 'secure' in kwargs:
             kwargs['secure'] = False
@@ -89,7 +121,8 @@ class LibraryTunnel(AbstractTunnel):
 
     @classmethod
     def is_available(cls) -> bool:
-        return availability_check(time.time() // 600)
+        # libziyuan tunnel is deprecated, use webvpn instead
+        return False
 
     @classmethod
     def construct(cls, session: Client, config: ConfigRegistry) -> AbstractTunnel:

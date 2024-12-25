@@ -20,10 +20,9 @@ def availability_check(time_hash) -> bool:
         # try to connect to a known server
         sock = socket.create_connection(('172.20.4.15', 80), timeout=1)
         sock.close()
+        return True
     except OSError or TimeoutError:
         return False
-
-    return True
 
 
 class NoTunnel(AbstractTunnel):
@@ -32,6 +31,9 @@ class NoTunnel(AbstractTunnel):
         pass
 
     def transform_url(self, url: str) -> str:
+        return url
+
+    def recover_url(self, url: str) -> str:
         return url
 
     def transform_cookie(self, **kwargs) -> dict:

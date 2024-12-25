@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 from .direct import NoTunnel
 from .libziyuan import LibraryTunnel
+from .webvpn import WebvpnTunnel
 
 if TYPE_CHECKING:
     from httpx import Client
@@ -12,7 +13,8 @@ if TYPE_CHECKING:
 
 _TUNNELS = [
     NoTunnel,
-    LibraryTunnel
+    LibraryTunnel,
+    WebvpnTunnel
 ]
 
 

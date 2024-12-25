@@ -21,6 +21,9 @@ class AbstractTunnel:
     def transform_url(self, url: str) -> str:
         raise NotImplementedError
 
+    def recover_url(self, url: str) -> str:
+        raise NotImplementedError
+
     def transform_cookie(self, **kwargs):
         raise NotImplementedError
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from http import HTTPStatus
 from typing import TYPE_CHECKING
+from urllib.parse import urlencode, urlparse
 
 from ..utils import random_ipv6
 
@@ -54,6 +55,43 @@ class CasAuthentication:
             raise RuntimeError('unknown error')
 
     def authenticate(self, service_url: str) -> Response:
+        self._authenticate_ticket()
+
+        session = self.tunnel.get_session()
+        url = self.tunnel.transform_url(f'{self.base_url}/login')
+        return session.get(url, params={
+            'service': service_url
+        }, headers={
+            'User-Agent': 'Mozilla/5.0',
+            'X-Forwarded-For': random_ipv6()
+        }, follow_redirects=True)
+
+    def authenticate_oauth(self, service_url: str) -> Response:
+        session = self.tunnel.get_session()
+        url = self.tunnel.transform_url(f'{self.base_url}/clientredirect?' + urlencode({
+            'client_name': 'mc-wx',
+            'service': service_url
+        }))
+        tried_login = False
+        while True:
+            response = session.get(url, headers={
+                'User-Agent': 'Mozilla/5.0',
+                'X-Forwarded-For': random_ipv6()
+            }, follow_redirects=True)
+
+            url = self.tunnel.recover_url(str(response.url))
+            parsed_url = urlparse(url)
+            if parsed_url.scheme == 'http':
+                # possible outcome: http page is reached, retry with https
+                url = self.tunnel.transform_url(parsed_url._replace(scheme='https').geturl())
+            elif parsed_url.netloc == 'cas.bjut.edu.cn' and parsed_url.path.startswith('/login') and not tried_login:
+                # possible outcome: at login page, set cookie and try again
+                self._authenticate_ticket()
+                tried_login = True
+            else:
+                return response
+
+    def _authenticate_ticket(self):
         session = self.tunnel.get_session()
         url = self.tunnel.transform_url(f'{self.base_url}/v1/tickets')
 
@@ -74,11 +112,3 @@ class CasAuthentication:
         session.cookies.set(
             **self.tunnel.transform_cookie(name='CASTGC', value=ticket, domain='.bjut.edu.cn')
         )
-
-        url = self.tunnel.transform_url(f'{self.base_url}/login')
-        return session.get(url, params={
-            'service': service_url
-        }, headers={
-            'User-Agent': 'Mozilla/5.0',
-            'X-Forwarded-For': random_ipv6()
-        }, follow_redirects=True)
